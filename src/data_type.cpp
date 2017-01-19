@@ -21,6 +21,8 @@
 #include "tuple.hpp"
 #include "types.hpp"
 #include "user_type_value.hpp"
+#include "value_types_by_class.hpp"
+#include "value_types_by_cql.hpp"
 
 #include <string.h>
 
@@ -383,68 +385,32 @@ namespace cass {
 
 const DataType::ConstPtr DataType::NIL;
 
-void NativeDataTypes::init_class_names() {
-  if (!by_class_names_.empty()) return;
-  by_class_names_["org.apache.cassandra.db.marshal.AsciiType"] = DataType::ConstPtr(new DataType(CASS_VALUE_TYPE_ASCII));
-  by_class_names_["org.apache.cassandra.db.marshal.BooleanType"] = DataType::ConstPtr(new DataType(CASS_VALUE_TYPE_BOOLEAN));
-  by_class_names_["org.apache.cassandra.db.marshal.ByteType"] = DataType::ConstPtr(new DataType(CASS_VALUE_TYPE_TINY_INT));
-  by_class_names_["org.apache.cassandra.db.marshal.BytesType"] = DataType::ConstPtr(new DataType(CASS_VALUE_TYPE_BLOB));
-  by_class_names_["org.apache.cassandra.db.marshal.CounterColumnType"] = DataType::ConstPtr(new DataType(CASS_VALUE_TYPE_COUNTER));
-  by_class_names_["org.apache.cassandra.db.marshal.DateType"] = DataType::ConstPtr(new DataType(CASS_VALUE_TYPE_TIMESTAMP));
-  by_class_names_["org.apache.cassandra.db.marshal.DecimalType"] = DataType::ConstPtr(new DataType(CASS_VALUE_TYPE_DECIMAL));
-  by_class_names_["org.apache.cassandra.db.marshal.DoubleType"] = DataType::ConstPtr(new DataType(CASS_VALUE_TYPE_DOUBLE));
-  by_class_names_["org.apache.cassandra.db.marshal.DurationType"] = DataType::ConstPtr(new DataType(CASS_VALUE_TYPE_DURATION));
-  by_class_names_["org.apache.cassandra.db.marshal.FloatType"] = DataType::ConstPtr(new DataType(CASS_VALUE_TYPE_FLOAT));
-  by_class_names_["org.apache.cassandra.db.marshal.InetAddressType"] = DataType::ConstPtr(new DataType(CASS_VALUE_TYPE_INET));
-  by_class_names_["org.apache.cassandra.db.marshal.Int32Type"] = DataType::ConstPtr(new DataType(CASS_VALUE_TYPE_INT));
-  by_class_names_["org.apache.cassandra.db.marshal.IntegerType"] = DataType::ConstPtr(new DataType(CASS_VALUE_TYPE_INT));
-  by_class_names_["org.apache.cassandra.db.marshal.LongType"] = DataType::ConstPtr(new DataType(CASS_VALUE_TYPE_BIGINT));
-  by_class_names_["org.apache.cassandra.db.marshal.ShortType"] = DataType::ConstPtr(new DataType(CASS_VALUE_TYPE_SMALL_INT));
-  by_class_names_["org.apache.cassandra.db.marshal.SimpleDateType"] = DataType::ConstPtr(new DataType(CASS_VALUE_TYPE_DATE));
-  by_class_names_["org.apache.cassandra.db.marshal.TimeType"] = DataType::ConstPtr(new DataType(CASS_VALUE_TYPE_TIME));
-  by_class_names_["org.apache.cassandra.db.marshal.TimestampType"] = DataType::ConstPtr(new DataType(CASS_VALUE_TYPE_TIMESTAMP));
-  by_class_names_["org.apache.cassandra.db.marshal.TimeUUIDType"] = DataType::ConstPtr(new DataType(CASS_VALUE_TYPE_TIMEUUID));
-  by_class_names_["org.apache.cassandra.db.marshal.UTF8Type"] = DataType::ConstPtr(new DataType(CASS_VALUE_TYPE_TEXT));
-  by_class_names_["org.apache.cassandra.db.marshal.UUIDType"] = DataType::ConstPtr(new DataType(CASS_VALUE_TYPE_UUID));
+DataType DataType::native_types_[CASS_VALUE_TYPE_LAST_ENTRY];
+
+struct DataTypeInitializer {
+  DataTypeInitializer() {
+    // Add a reference so that the memory is never deleted
+#define XX_VALUE_TYPE(name, type, cql) (new(&DataType::native_types_[name]) DataType(name))->inc_ref();
+    CASS_VALUE_TYPE_MAPPING(XX_VALUE_TYPE)
+    #undef XX_VALUE_TYPE
+  }
+};
+
+DataTypeInitializer __data_type_initializer__;
+
+DataType::ConstPtr DataType::get_native_by_class(const std::string& name) {
+  ValueTypeByClassMapping* mapping =
+    ValueTypeByClass::in_word_set(name.c_str(), name.length());
+  if (mapping == NULL) return DataType::NIL;
+  return DataType::ConstPtr(&native_types_[mapping->value_type]);
 }
 
-const DataType::ConstPtr& NativeDataTypes::by_class_name(const std::string& name) const {
-  DataTypeMap::const_iterator i = by_class_names_.find(name);
-  if (i == by_class_names_.end()) return DataType::NIL;
-  return i->second;
+DataType::ConstPtr DataType::get_native_by_cql(const std::string& name) {
+  ValueTypeByCqlMapping* mapping =
+    ValueTypeByCql::in_word_set(name.c_str(), name.length());
+  if (mapping == NULL) return DataType::NIL;
+  return DataType::ConstPtr(&native_types_[mapping->value_type]);
 }
-
-void NativeDataTypes::init_cql_names() {
-  if (!by_cql_names_.empty()) return;
-  by_cql_names_["ascii"] = DataType::ConstPtr(new DataType(CASS_VALUE_TYPE_ASCII));
-  by_cql_names_["bigint"] = DataType::ConstPtr(new DataType(CASS_VALUE_TYPE_BIGINT));
-  by_cql_names_["blob"] = DataType::ConstPtr(new DataType(CASS_VALUE_TYPE_BLOB));
-  by_cql_names_["boolean"] = DataType::ConstPtr(new DataType(CASS_VALUE_TYPE_BOOLEAN));
-  by_cql_names_["counter"] = DataType::ConstPtr(new DataType(CASS_VALUE_TYPE_COUNTER));
-  by_cql_names_["date"] = DataType::ConstPtr(new DataType(CASS_VALUE_TYPE_DATE));
-  by_cql_names_["decimal"] = DataType::ConstPtr(new DataType(CASS_VALUE_TYPE_DECIMAL));
-  by_cql_names_["double"] = DataType::ConstPtr(new DataType(CASS_VALUE_TYPE_DOUBLE));
-  by_cql_names_["duration"] = DataType::ConstPtr(new DataType(CASS_VALUE_TYPE_DURATION));
-  by_cql_names_["float"] = DataType::ConstPtr(new DataType(CASS_VALUE_TYPE_FLOAT));
-  by_cql_names_["inet"] = DataType::ConstPtr(new DataType(CASS_VALUE_TYPE_INET));
-  by_cql_names_["int"] = DataType::ConstPtr(new DataType(CASS_VALUE_TYPE_INT));
-  by_cql_names_["smallint"] = DataType::ConstPtr(new DataType(CASS_VALUE_TYPE_SMALL_INT));
-  by_cql_names_["time"] = DataType::ConstPtr(new DataType(CASS_VALUE_TYPE_TIME));
-  by_cql_names_["timestamp"] = DataType::ConstPtr(new DataType(CASS_VALUE_TYPE_TIMESTAMP));
-  by_cql_names_["timeuuid"] = DataType::ConstPtr(new DataType(CASS_VALUE_TYPE_TIMEUUID));
-  by_cql_names_["tinyint"] = DataType::ConstPtr(new DataType(CASS_VALUE_TYPE_TINY_INT));
-  by_cql_names_["text"] = DataType::ConstPtr(new DataType(CASS_VALUE_TYPE_TEXT));
-  by_cql_names_["uuid"] = DataType::ConstPtr(new DataType(CASS_VALUE_TYPE_UUID));
-  by_cql_names_["varchar"] = DataType::ConstPtr(new DataType(CASS_VALUE_TYPE_VARCHAR));
-  by_cql_names_["varint"] = DataType::ConstPtr(new DataType(CASS_VALUE_TYPE_VARINT));
-}
-
-const DataType::ConstPtr& NativeDataTypes::by_cql_name(const std::string& name) const {
-  DataTypeMap::const_iterator i = by_cql_names_.find(name);
-  if (i == by_cql_names_.end()) return DataType::NIL;
-  return i->second;
-}
-
 
 bool cass::IsValidDataType<const Collection*>::operator()(const Collection* value,
                                                           const DataType::ConstPtr& data_type) const {

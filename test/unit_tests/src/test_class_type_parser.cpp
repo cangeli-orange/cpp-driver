@@ -28,16 +28,13 @@ BOOST_AUTO_TEST_CASE(simple)
 {
   cass::DataType::ConstPtr data_type;
 
-  cass::NativeDataTypes native_types;
-  native_types.init_class_names();
-
-  data_type = cass::DataTypeClassNameParser::parse_one("org.apache.cassandra.db.marshal.InetAddressType", native_types);
+  data_type = cass::DataTypeClassNameParser::parse_one("org.apache.cassandra.db.marshal.InetAddressType");
   BOOST_CHECK(data_type->value_type() == CASS_VALUE_TYPE_INET);
 
-  data_type = cass::DataTypeClassNameParser::parse_one("org.apache.cassandra.db.marshal.ReversedType(org.apache.cassandra.db.marshal.UTF8Type)", native_types);
+  data_type = cass::DataTypeClassNameParser::parse_one("org.apache.cassandra.db.marshal.ReversedType(org.apache.cassandra.db.marshal.UTF8Type)");
   BOOST_CHECK(data_type->value_type() == CASS_VALUE_TYPE_TEXT);
 
-  data_type = cass::DataTypeClassNameParser::parse_one("org.apache.cassandra.db.marshal.ListType(org.apache.cassandra.db.marshal.UTF8Type)", native_types);
+  data_type = cass::DataTypeClassNameParser::parse_one("org.apache.cassandra.db.marshal.ListType(org.apache.cassandra.db.marshal.UTF8Type)");
   BOOST_REQUIRE(data_type->value_type() == CASS_VALUE_TYPE_LIST);
 
   cass::CollectionType::ConstPtr collection
@@ -50,49 +47,42 @@ BOOST_AUTO_TEST_CASE(invalid)
 {
   cass_log_set_level(CASS_LOG_DISABLED);
 
-  cass::NativeDataTypes native_types;
-  native_types.init_class_names();
-
   // Premature end of string
-  BOOST_CHECK(!cass::DataTypeClassNameParser::parse_one("org.apache.cassandra.db.marshal.UserType", native_types));
-  BOOST_CHECK(!cass::DataTypeClassNameParser::parse_one("org.apache.cassandra.db.marshal.UserType(", native_types));
-  BOOST_CHECK(!cass::DataTypeClassNameParser::parse_one("org.apache.cassandra.db.marshal.UserType(blah", native_types));
-  BOOST_CHECK(!cass::DataTypeClassNameParser::parse_one("org.apache.cassandra.db.marshal.UserType(blah,", native_types));
+  BOOST_CHECK(!cass::DataTypeClassNameParser::parse_one("org.apache.cassandra.db.marshal.UserType"));
+  BOOST_CHECK(!cass::DataTypeClassNameParser::parse_one("org.apache.cassandra.db.marshal.UserType("));
+  BOOST_CHECK(!cass::DataTypeClassNameParser::parse_one("org.apache.cassandra.db.marshal.UserType(blah"));
+  BOOST_CHECK(!cass::DataTypeClassNameParser::parse_one("org.apache.cassandra.db.marshal.UserType(blah,"));
 
   // Empty
-  BOOST_CHECK(!cass::DataTypeClassNameParser::parse_one("org.apache.cassandra.db.marshal.UserType()", native_types));
+  BOOST_CHECK(!cass::DataTypeClassNameParser::parse_one("org.apache.cassandra.db.marshal.UserType()"));
 
   // Invalid hex
-  BOOST_CHECK(!cass::DataTypeClassNameParser::parse_one("org.apache.cassandra.db.marshal.UserType(blah,ZZZZ", native_types));
+  BOOST_CHECK(!cass::DataTypeClassNameParser::parse_one("org.apache.cassandra.db.marshal.UserType(blah,ZZZZ"));
 
   // Missing ':'
   BOOST_CHECK(!cass::DataTypeClassNameParser::parse_one("org.apache.cassandra.db.marshal.UserType("
                                            "foo,61646472657373,"
-                                           "737472656574org.apache.cassandra.db.marshal.UTF8Type)", native_types));
+                                           "737472656574org.apache.cassandra.db.marshal.UTF8Type)"));
 
   // Premature end of string
-  BOOST_CHECK(!cass::DataTypeClassNameParser::parse_with_composite("org.apache.cassandra.db.marshal.CompositeType", native_types));
-  BOOST_CHECK(!cass::DataTypeClassNameParser::parse_with_composite("org.apache.cassandra.db.marshal.CompositeType(", native_types));
-  BOOST_CHECK(!cass::DataTypeClassNameParser::parse_with_composite("org.apache.cassandra.db.marshal.CompositeType(org.apache.cassandra.db.marshal.UTF8Type", native_types));
-  BOOST_CHECK(!cass::DataTypeClassNameParser::parse_with_composite("org.apache.cassandra.db.marshal.CompositeType(org.apache.cassandra.db.marshal.UTF8Type,", native_types));
+  BOOST_CHECK(!cass::DataTypeClassNameParser::parse_with_composite("org.apache.cassandra.db.marshal.CompositeType"));
+  BOOST_CHECK(!cass::DataTypeClassNameParser::parse_with_composite("org.apache.cassandra.db.marshal.CompositeType("));
+  BOOST_CHECK(!cass::DataTypeClassNameParser::parse_with_composite("org.apache.cassandra.db.marshal.CompositeType(org.apache.cassandra.db.marshal.UTF8Type"));
+  BOOST_CHECK(!cass::DataTypeClassNameParser::parse_with_composite("org.apache.cassandra.db.marshal.CompositeType(org.apache.cassandra.db.marshal.UTF8Type,"));
 
   // Empty
-  BOOST_CHECK(!cass::DataTypeClassNameParser::parse_with_composite("org.apache.cassandra.db.marshal.CompositeType()", native_types));
+  BOOST_CHECK(!cass::DataTypeClassNameParser::parse_with_composite("org.apache.cassandra.db.marshal.CompositeType()"));
 }
 
 BOOST_AUTO_TEST_CASE(udt)
 {
-  cass::NativeDataTypes native_types;
-  native_types.init_class_names();
-
   cass::DataType::ConstPtr data_type
       = cass::DataTypeClassNameParser::parse_one("org.apache.cassandra.db.marshal.UserType("
                                                  "foo,61646472657373,"
                                                  "737472656574:org.apache.cassandra.db.marshal.UTF8Type,"
                                                  "7a6970636f6465:org.apache.cassandra.db.marshal.Int32Type,"
                                                  "70686f6e6573:org.apache.cassandra.db.marshal.SetType("
-                                                 "org.apache.cassandra.db.marshal.UserType(foo,70686f6e65,6e616d65:org.apache.cassandra.db.marshal.UTF8Type,6e756d626572:org.apache.cassandra.db.marshal.UTF8Type)))",
-                                                 native_types);
+                                                 "org.apache.cassandra.db.marshal.UserType(foo,70686f6e65,6e616d65:org.apache.cassandra.db.marshal.UTF8Type,6e756d626572:org.apache.cassandra.db.marshal.UTF8Type)))");
 
   BOOST_REQUIRE(data_type->value_type() == CASS_VALUE_TYPE_UDT);
 
@@ -148,14 +138,11 @@ BOOST_AUTO_TEST_CASE(udt)
 
 BOOST_AUTO_TEST_CASE(tuple)
 {
-  cass::NativeDataTypes native_types;
-  native_types.init_class_names();
-
   cass::DataType::ConstPtr data_type
       = cass::DataTypeClassNameParser::parse_one("org.apache.cassandra.db.marshal.TupleType("
                                                  "org.apache.cassandra.db.marshal.Int32Type,"
                                                  "org.apache.cassandra.db.marshal.UTF8Type,"
-                                                 "org.apache.cassandra.db.marshal.FloatType)", native_types);
+                                                 "org.apache.cassandra.db.marshal.FloatType)");
 
   BOOST_REQUIRE(data_type->value_type() == CASS_VALUE_TYPE_TUPLE);
 
@@ -170,15 +157,12 @@ BOOST_AUTO_TEST_CASE(tuple)
 
 BOOST_AUTO_TEST_CASE(nested_collections)
 {
-  cass::NativeDataTypes native_types;
-  native_types.init_class_names();
-
   cass::DataType::ConstPtr data_type
       = cass::DataTypeClassNameParser::parse_one("org.apache.cassandra.db.marshal.MapType("
                                                  "org.apache.cassandra.db.marshal.UTF8Type,"
                                                  "org.apache.cassandra.db.marshal.FrozenType("
                                                  "org.apache.cassandra.db.marshal.MapType("
-                                                 "org.apache.cassandra.db.marshal.Int32Type,org.apache.cassandra.db.marshal.Int32Type)))", native_types);
+                                                 "org.apache.cassandra.db.marshal.Int32Type,org.apache.cassandra.db.marshal.Int32Type)))");
 
   BOOST_REQUIRE(data_type->value_type() == CASS_VALUE_TYPE_MAP);
 
@@ -201,13 +185,10 @@ BOOST_AUTO_TEST_CASE(nested_collections)
 
 BOOST_AUTO_TEST_CASE(composite)
 {
-  cass::NativeDataTypes native_types;
-  native_types.init_class_names();
-
   cass::SharedRefPtr<cass::ParseResult> result
       = cass::DataTypeClassNameParser::parse_with_composite("org.apache.cassandra.db.marshal.CompositeType("
                                                             "org.apache.cassandra.db.marshal.AsciiType,"
-                                                            "org.apache.cassandra.db.marshal.Int32Type)", native_types);
+                                                            "org.apache.cassandra.db.marshal.Int32Type)");
 
   BOOST_CHECK(result->is_composite());
 
@@ -224,11 +205,8 @@ BOOST_AUTO_TEST_CASE(composite)
 
 BOOST_AUTO_TEST_CASE(not_composite)
 {
-  cass::NativeDataTypes native_types;
-  native_types.init_class_names();
-
   cass::SharedRefPtr<cass::ParseResult> result
-      = cass::DataTypeClassNameParser::parse_with_composite("org.apache.cassandra.db.marshal.InetAddressType", native_types);
+      = cass::DataTypeClassNameParser::parse_with_composite("org.apache.cassandra.db.marshal.InetAddressType");
 
   BOOST_REQUIRE(result->types().size() == 1);
   BOOST_CHECK(result->types()[0]->value_type() == CASS_VALUE_TYPE_INET);
@@ -239,13 +217,10 @@ BOOST_AUTO_TEST_CASE(not_composite)
 
 BOOST_AUTO_TEST_CASE(composite_with_reversed)
 {
-  cass::NativeDataTypes native_types;
-  native_types.init_class_names();
-
   cass::SharedRefPtr<cass::ParseResult> result
       = cass::DataTypeClassNameParser::parse_with_composite("org.apache.cassandra.db.marshal.CompositeType("
                                                             "org.apache.cassandra.db.marshal.ReversedType(org.apache.cassandra.db.marshal.AsciiType),"
-                                                            "org.apache.cassandra.db.marshal.Int32Type)", native_types);
+                                                            "org.apache.cassandra.db.marshal.Int32Type)");
 
   BOOST_CHECK(result->is_composite());
 
@@ -262,9 +237,6 @@ BOOST_AUTO_TEST_CASE(composite_with_reversed)
 
 BOOST_AUTO_TEST_CASE(composite_with_collections)
 {
-  cass::NativeDataTypes native_types;
-  native_types.init_class_names();
-
   cass::SharedRefPtr<cass::ParseResult> result
       = cass::DataTypeClassNameParser::parse_with_composite("org.apache.cassandra.db.marshal.CompositeType("
                                                             "org.apache.cassandra.db.marshal.Int32Type, "
@@ -273,7 +245,7 @@ BOOST_AUTO_TEST_CASE(composite_with_collections)
                                                             "6162:org.apache.cassandra.db.marshal.ListType(org.apache.cassandra.db.marshal.Int32Type),"
                                                             "4A4b4C4D4e4F:org.apache.cassandra.db.marshal.SetType(org.apache.cassandra.db.marshal.UTF8Type),"
                                                             "6A6b6C6D6e6F:org.apache.cassandra.db.marshal.MapType(org.apache.cassandra.db.marshal.UTF8Type, org.apache.cassandra.db.marshal.LongType)"
-                                                            "))", native_types);
+                                                            "))");
 
   BOOST_CHECK(result->is_composite());
 
@@ -317,14 +289,11 @@ BOOST_AUTO_TEST_CASE(frozen)
 {
   cass::DataType::ConstPtr data_type;
 
-  cass::NativeDataTypes native_types;
-  native_types.init_class_names();
-
-  data_type = cass::DataTypeClassNameParser::parse_one("org.apache.cassandra.db.marshal.FrozenType(org.apache.cassandra.db.marshal.ListType(org.apache.cassandra.db.marshal.UTF8Type))", native_types);
+  data_type = cass::DataTypeClassNameParser::parse_one("org.apache.cassandra.db.marshal.FrozenType(org.apache.cassandra.db.marshal.ListType(org.apache.cassandra.db.marshal.UTF8Type))");
   BOOST_REQUIRE(data_type->value_type() == CASS_VALUE_TYPE_LIST);
   BOOST_CHECK(data_type->is_frozen());
 
-  data_type = cass::DataTypeClassNameParser::parse_one("org.apache.cassandra.db.marshal.ListType(org.apache.cassandra.db.marshal.FrozenType(org.apache.cassandra.db.marshal.ListType(org.apache.cassandra.db.marshal.UTF8Type)))", native_types);
+  data_type = cass::DataTypeClassNameParser::parse_one("org.apache.cassandra.db.marshal.ListType(org.apache.cassandra.db.marshal.FrozenType(org.apache.cassandra.db.marshal.ListType(org.apache.cassandra.db.marshal.UTF8Type)))");
   BOOST_REQUIRE(data_type->value_type() == CASS_VALUE_TYPE_LIST);
   BOOST_CHECK(!data_type->is_frozen());
 

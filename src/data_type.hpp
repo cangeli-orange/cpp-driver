@@ -72,7 +72,11 @@ public:
 
   static const DataType::ConstPtr NIL;
 
-  DataType(CassValueType value_type, bool is_frozen = false)
+  static DataType::ConstPtr get_native_by_class(const std::string& name);
+  static DataType::ConstPtr get_native_by_cql(const std::string& name);
+
+  DataType(CassValueType value_type = CASS_VALUE_TYPE_UNKNOWN,
+           bool is_frozen = false)
     : value_type_(value_type)
     , is_frozen_(is_frozen) { }
 
@@ -111,31 +115,9 @@ public:
 
   virtual std::string to_string() const {
     switch (value_type_) {
-      case CASS_VALUE_TYPE_ASCII: return "ascii";
-      case CASS_VALUE_TYPE_BIGINT: return "bigint";
-      case CASS_VALUE_TYPE_BLOB: return "blob";
-      case CASS_VALUE_TYPE_BOOLEAN: return "boolean";
-      case CASS_VALUE_TYPE_COUNTER: return "counter";
-      case CASS_VALUE_TYPE_DECIMAL: return "decimal";
-      case CASS_VALUE_TYPE_DOUBLE: return "double";
-      case CASS_VALUE_TYPE_DURATION: return "duration";
-      case CASS_VALUE_TYPE_FLOAT: return "float";
-      case CASS_VALUE_TYPE_INT: return "int";
-      case CASS_VALUE_TYPE_TEXT: return "text";
-      case CASS_VALUE_TYPE_TIMESTAMP: return "timestamp";
-      case CASS_VALUE_TYPE_UUID: return "uuid";
-      case CASS_VALUE_TYPE_VARCHAR: return "varchar";
-      case CASS_VALUE_TYPE_VARINT: return "varint";
-      case CASS_VALUE_TYPE_TIMEUUID: return "timeuuid";
-      case CASS_VALUE_TYPE_INET: return "inet";
-      case CASS_VALUE_TYPE_DATE: return "date";
-      case CASS_VALUE_TYPE_TIME: return "time";
-      case CASS_VALUE_TYPE_SMALL_INT: return "smallint";
-      case CASS_VALUE_TYPE_TINY_INT: return "tinyint";
-      case CASS_VALUE_TYPE_LIST: return "list";
-      case CASS_VALUE_TYPE_MAP: return "map";
-      case CASS_VALUE_TYPE_SET: return "set";
-      case CASS_VALUE_TYPE_TUPLE: return "tuple";
+#define XX_VALUE_TYPE(name, type, cql) case name: return cql;
+  CASS_VALUE_TYPE_MAPPING(XX_VALUE_TYPE)
+#undef XX_VALUE_TYPE
       default: return "";
     }
   }
@@ -144,6 +126,11 @@ private:
   int protocol_version_;
   CassValueType value_type_;
   bool is_frozen_;
+
+private:
+  friend struct DataTypeInitializer;
+
+  static DataType native_types_[CASS_VALUE_TYPE_LAST_ENTRY];
 
 private:
  DISALLOW_COPY_AND_ASSIGN(DataType);
@@ -450,20 +437,6 @@ private:
   std::string keyspace_;
   std::string type_name_;
   CaseInsensitiveHashTable<Field> fields_;
-};
-
-class NativeDataTypes {
-public:
-  void init_class_names();
-  const DataType::ConstPtr& by_class_name(const std::string& name) const;
-
-  void init_cql_names();
-  const DataType::ConstPtr& by_cql_name(const std::string& name) const;
-
-private:
-  typedef std::map<std::string, DataType::ConstPtr> DataTypeMap;
-  DataTypeMap by_class_names_;
-  DataTypeMap by_cql_names_;
 };
 
 template<class T>

@@ -1,0 +1,36 @@
+// gperf -t value_types_by_cql.gperf
+%{
+%}
+%ignore-case
+%language=C++
+%define initializer-suffix ,CASS_VALUE_TYPE_UNKNOWN
+%define class-name ValueTypeByCql
+struct ValueTypeByCqlMapping { const char *name; CassValueType value_type; };
+%%
+ascii, CASS_VALUE_TYPE_ASCII
+bigint, CASS_VALUE_TYPE_BIGINT
+blob, CASS_VALUE_TYPE_BLOB
+boolean, CASS_VALUE_TYPE_BOOLEAN
+counter, CASS_VALUE_TYPE_COUNTER
+date, CASS_VALUE_TYPE_DATE
+decimal, CASS_VALUE_TYPE_DECIMAL
+double, CASS_VALUE_TYPE_DOUBLE
+duration, CASS_VALUE_TYPE_DURATION
+float, CASS_VALUE_TYPE_FLOAT
+inet, CASS_VALUE_TYPE_INET
+int, CASS_VALUE_TYPE_INT
+smallint, CASS_VALUE_TYPE_SMALL_INT
+time, CASS_VALUE_TYPE_TIME
+timestamp, CASS_VALUE_TYPE_TIMESTAMP
+timeuuid, CASS_VALUE_TYPE_TIMEUUID
+tinyint, CASS_VALUE_TYPE_TINY_INT
+text, CASS_VALUE_TYPE_TEXT
+uuid, CASS_VALUE_TYPE_UUID
+varchar, CASS_VALUE_TYPE_VARCHAR
+varint, CASS_VALUE_TYPE_VARINT
+%%
+#undef TOTAL_KEYWORDS
+#undef MIN_WORD_LENGTH
+#undef MAX_WORD_LENGTH
+#undef MIN_HASH_VALUE
+#undef MAX_HASH_VALUE
