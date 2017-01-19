@@ -412,6 +412,13 @@ DataType::ConstPtr DataType::get_native_by_cql(const std::string& name) {
   return DataType::ConstPtr(&native_types_[mapping->value_type]);
 }
 
+DataType::ConstPtr DataType::get_native_by_value_type(uint16_t value_type) {
+  if (value_type >= CASS_VALUE_TYPE_LAST_ENTRY) {
+    return DataType::NIL;
+  }
+  return DataType::ConstPtr(&native_types_[value_type]);
+}
+
 bool cass::IsValidDataType<const Collection*>::operator()(const Collection* value,
                                                           const DataType::ConstPtr& data_type) const {
   return value->data_type()->equals(data_type);

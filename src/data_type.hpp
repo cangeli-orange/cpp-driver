@@ -74,6 +74,7 @@ public:
 
   static DataType::ConstPtr get_native_by_class(const std::string& name);
   static DataType::ConstPtr get_native_by_cql(const std::string& name);
+  static DataType::ConstPtr get_native_by_value_type(uint16_t value_type);
 
   DataType(CassValueType value_type = CASS_VALUE_TYPE_UNKNOWN,
            bool is_frozen = false)
