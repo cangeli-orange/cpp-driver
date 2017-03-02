@@ -183,7 +183,7 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
 if(NOT CMAKE_VERSION VERSION_LESS "2.8.8")
   add_library(cpp-driver OBJECT ${CASS_ALL_SOURCE_FILES})
   if(NOT WIN32)
-    set_property(TARGET cpp-driver PROPERTY COMPILE_FLAGS "${CASS_DRIVER_CXX_FLAGS} -fPIC")
+    set_property(TARGET cpp-driver PROPERTY COMPILE_FLAGS "${CASS_DRIVER_CXX_FLAGS} -fPIC -pg")
   endif()
 
   # Build both shared and static libraries
