@@ -1066,7 +1066,7 @@ const Value* MetadataBase::add_json_map_field(int protocol_version, const Row* r
   }
 
   if (!d.IsObject()) {
-    LOG_DEBUG("Expected JSON object for column '%s' (probably null or empty)", name.c_str());
+    //LOG_DEBUG("Expected JSON object for column '%s' (probably null or empty)", name.c_str());
     fields_[name] = MetadataField(name);
     return (fields_[name] = MetadataField(name)).value();
   }
@@ -2297,4 +2297,3 @@ KeyspaceMetadata* Metadata::InternalData::get_or_create_keyspace(const std::stri
 }
 
 } // namespace cass
-
