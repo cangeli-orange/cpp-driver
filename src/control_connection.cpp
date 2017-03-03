@@ -428,6 +428,7 @@ void ControlConnection::on_query_hosts(ControlConnection* control_connection,
   }
 
   bool is_initial_connection = (control_connection->state_ == CONTROL_STATE_NEW);
+  LOG_DEBUG("ControlConnection::query_meta_hosts is_initial_connection: %d", is_initial_connection);
 
   // If the 'system.local' table is empty the connection isn't used as a control
   // connection because at least one node's information is required (itself). An
@@ -495,6 +496,7 @@ void ControlConnection::on_query_hosts(ControlConnection* control_connection,
       control_connection->token_aware_routing_) {
     control_connection->query_meta_schema();
   } else if (is_initial_connection) {
+    LOG_DEBUG("ControlConnection::query_meta_hosts calling on_control_connection_ready");
     control_connection->state_ = CONTROL_STATE_READY;
     session->on_control_connection_ready();
     // Create a new query plan that considers all the new hosts from the
