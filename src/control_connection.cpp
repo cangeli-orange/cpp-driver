@@ -145,6 +145,7 @@ void ControlConnection::connect(Session* session) {
   protocol_version_ = session_->config().protocol_version();
   use_schema_ = session_->config().use_schema();
   token_aware_routing_ = session_->config().token_aware_routing();
+  LOG_DEBUG("ControlConnection::connect token_aware_routing: %d", token_aware_routing_);
   if (protocol_version_ < 0) {
     protocol_version_ = CASS_HIGHEST_SUPPORTED_PROTOCOL_VERSION;
   }
