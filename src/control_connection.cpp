@@ -145,7 +145,6 @@ void ControlConnection::connect(Session* session) {
   protocol_version_ = session_->config().protocol_version();
   use_schema_ = session_->config().use_schema();
   token_aware_routing_ = session_->config().token_aware_routing();
-  LOG_DEBUG("ControlConnection::connect token_aware_routing: %d", token_aware_routing_);
   if (protocol_version_ < 0) {
     protocol_version_ = CASS_HIGHEST_SUPPORTED_PROTOCOL_VERSION;
   }
@@ -432,7 +431,6 @@ void ControlConnection::on_query_hosts(ControlConnection* control_connection,
   }
 
   bool is_initial_connection = (control_connection->state_ == CONTROL_STATE_NEW);
-  LOG_DEBUG("ControlConnection::query_meta_hosts is_initial_connection: %d", is_initial_connection);
 
   // If the 'system.local' table is empty the connection isn't used as a control
   // connection because at least one node's information is required (itself). An
