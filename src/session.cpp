@@ -744,7 +744,6 @@ void Session::on_execute(uv_async_t* data) {
 }
 
 QueryPlan* Session::new_query_plan(const Request* request, Request::EncodingCache* cache) {
-  LOG_DEBUG("token_map_ exists ? %d", bool(token_map_));
   const CopyOnWritePtr<std::string> keyspace(keyspace_);
   return load_balancing_policy_->new_query_plan(*keyspace, request, token_map_.get(), cache);
 }
