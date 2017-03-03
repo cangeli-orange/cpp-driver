@@ -47,6 +47,7 @@ QueryPlan* TokenAwarePolicy::new_query_plan(const std::string& connected_keyspac
                                             const Request* request,
                                             const TokenMap* token_map,
                                             Request::EncodingCache* cache) {
+  LOG_DEBUG("inside TokenAwarePolicy::new_query_plan");
   if (request != NULL) {
     switch (request->opcode()) {
       {
@@ -62,6 +63,7 @@ QueryPlan* TokenAwarePolicy::new_query_plan(const std::string& connected_keyspac
           if (token_map != NULL) {
             CopyOnWriteHostVec replicas = token_map->get_replicas(keyspace, routing_key);
             if (replicas && !replicas->empty()) {
+              LOG_DEBUG("return new TokenAwareQueryPlan");
               return new TokenAwareQueryPlan(child_policy_.get(),
                                              child_policy_->new_query_plan(connected_keyspace, request, token_map, cache),
                                              replicas,
@@ -76,6 +78,7 @@ QueryPlan* TokenAwarePolicy::new_query_plan(const std::string& connected_keyspac
         break;
     }
   }
+  LOG_DEBUG("return child_policy_->new_query_plan");
   return child_policy_->new_query_plan(connected_keyspace, request, token_map, cache);
 }
 
