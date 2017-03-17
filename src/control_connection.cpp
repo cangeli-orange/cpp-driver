@@ -289,7 +289,7 @@ void ControlConnection::on_event(EventResponse* response) {
           if (host) {
             session_->on_remove(host);
             if (session_->token_map_) {
-              session_->token_map_->remove_host_and_build(host);
+			  query_meta_hosts();
             }
           } else {
             LOG_DEBUG("Tried to remove host %s that doesn't exist", address_str.c_str());
