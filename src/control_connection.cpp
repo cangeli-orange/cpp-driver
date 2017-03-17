@@ -289,7 +289,7 @@ void ControlConnection::on_event(EventResponse* response) {
           if (host) {
             session_->on_remove(host);
             if (session_->token_map_) {
-			  query_meta_hosts();
+              query_meta_hosts();
             }
           } else {
             LOG_DEBUG("Tried to remove host %s that doesn't exist", address_str.c_str());
@@ -305,7 +305,7 @@ void ControlConnection::on_event(EventResponse* response) {
           } else {
             LOG_DEBUG("Move event for host %s that doesn't exist", address_str.c_str());
             if (session_->token_map_) {
-              session_->token_map_->remove_host_and_build(host);
+              query_meta_hosts();
             }
           }
           break;
@@ -558,9 +558,9 @@ void ControlConnection::on_query_meta_schema(ControlConnection* control_connecti
     ResultResponse* keyspaces_result;
     if (MultipleRequestHandler::get_result_response(responses, "keyspaces", &keyspaces_result)) {
       session->token_map_->clear_replicas_and_strategies(); // Only clear replicas once we have the new keyspaces
-      session->token_map_->add_keyspaces(cassandra_version, keyspaces_result);
+      session->token_map_->add_keyspaces(cassandra_version, session->config().local_dc(), keyspaces_result);
     }
-    session->token_map_->build();
+    session->token_map_->build(session->config().local_dc());
   }
 
   if (control_connection->use_schema_) {
@@ -780,7 +780,7 @@ void ControlConnection::update_node_info(SharedRefPtr<Host> host, const Row* row
     if (v != NULL && v->is_collection()) {
       if (session_->token_map_) {
         if (type == UPDATE_HOST_AND_BUILD) {
-          session_->token_map_->update_host_and_build(host, v);
+          query_meta_hosts();
         } else {
           session_->token_map_->add_host(host, v);
         }
@@ -825,7 +825,7 @@ void ControlConnection::on_refresh_keyspace(ControlConnection* control_connectio
   const VersionNumber& cassandra_version = control_connection->cassandra_version_;
 
   if (session->token_map_) {
-    session->token_map_->update_keyspaces_and_build(cassandra_version, result);
+    session->token_map_->update_keyspaces_and_build(cassandra_version, session->config().local_dc(), result);
   }
 
   if (control_connection->use_schema_) {

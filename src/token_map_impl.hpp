@@ -176,11 +176,15 @@ struct ReplicationFactor {
   }
 };
 
-inline void build_datacenters(const HostSet& hosts, DatacenterMap& result) {
+inline void build_datacenters(const HostSet& hosts, const std::string& local_dc, DatacenterMap& result) {
   result.clear();
   for (HostSet::const_iterator i = hosts.begin(), end = hosts.end();
        i != end; ++i) {
     uint32_t dc = (*i)->dc_id();
+    const std::string& dc_name = (*i)->dc();
+    if (!local_dc.empty() && dc_name != local_dc) {
+        continue;
+    }
     uint32_t rack = (*i)->rack_id();
     if (dc != 0 && rack != 0) {
       Datacenter& datacenter = result[dc];
@@ -557,16 +561,16 @@ public:
   }
 
   virtual void add_host(const Host::Ptr& host, const Value* tokens);
-  virtual void update_host_and_build(const Host::Ptr& host, const Value* tokens);
-  virtual void remove_host_and_build(const Host::Ptr& host);
   virtual void clear_tokens_and_hosts();
 
-  virtual void add_keyspaces(const VersionNumber& cassandra_version, ResultResponse* result);
-  virtual void update_keyspaces_and_build(const VersionNumber& cassandra_version, ResultResponse* result);
+  virtual void add_keyspaces(const VersionNumber& cassandra_version,
+                             const std::string& local_dc, ResultResponse* result);
+  virtual void update_keyspaces_and_build(const VersionNumber& cassandra_version , 
+                                          const std::string& local_dc, ResultResponse* result);
   virtual void drop_keyspace(const std::string& keyspace_name);
   virtual void clear_replicas_and_strategies();
 
-  virtual void build();
+  virtual void build(const std::string& local_dc);
 
   virtual const CopyOnWriteHostVec& get_replicas(const std::string& keyspace_name,
                                                  const std::string& routing_key) const;
@@ -574,10 +578,11 @@ public:
 private:
   void update_keyspace(const VersionNumber& cassandra_version,
                        ResultResponse* result,
+                       const std::string& local_dc,
                        bool should_build_replicas);
   void remote_host_tokens(const Host::Ptr& host);
   void update_host_ids(const Host::Ptr& host);
-  void build_replicas();
+  void build_replicas(const std::string& local_dc);
 
 private:
   TokenHostVec tokens_;
@@ -605,51 +610,6 @@ void TokenMapImpl<Partitioner>::add_host(const Host::Ptr& host, const Value* tok
 }
 
 template <class Partitioner>
-void TokenMapImpl<Partitioner>::update_host_and_build(const Host::Ptr& host, const Value* tokens) {
-  uint64_t start = uv_hrtime();
-  remote_host_tokens(host);
-
-  update_host_ids(host);
-  hosts_.insert(host);
-
-  TokenHostVec new_tokens;
-  CollectionIterator iterator(tokens);
-  while (iterator.next()) {
-    Token token = Partitioner::from_string(iterator.value()->to_string_ref());
-    new_tokens.push_back(TokenHost(token, host.get()));
-  }
-
-  std::sort(new_tokens.begin(), new_tokens.end());
-
-  size_t previous_size = tokens_.size();
-  tokens_.resize(tokens_.size() + new_tokens.size());
-  std::merge(tokens_.begin(), tokens_.begin() + previous_size,
-             new_tokens.begin(), new_tokens.end(),
-             tokens_.begin(), TokenHostCompare());
-
-  build_replicas();
-  LOG_DEBUG("Updated token map with host %s (%u tokens). Rebuilt token map with %u hosts and %u tokens in %f ms",
-            host->address_string().c_str(),
-            (unsigned int)new_tokens.size(),
-            (unsigned int)hosts_.size(),
-            (unsigned int)tokens_.size(),
-            (double)(uv_hrtime() - start) / (1000.0 * 1000.0));
-}
-
-template <class Partitioner>
-void TokenMapImpl<Partitioner>::remove_host_and_build(const Host::Ptr& host) {
-  uint64_t start = uv_hrtime();
-  remote_host_tokens(host);
-  hosts_.erase(host);
-  build_replicas();
-  LOG_DEBUG("Removed host %s from token map. Rebuilt token map with %u hosts and %u tokens in %f ms",
-            host->address_string().c_str(),
-            (unsigned int)hosts_.size(),
-            (unsigned int)tokens_.size(),
-            (double)(uv_hrtime() - start) / (1000.0 * 1000.0));
-}
-
-template <class Partitioner>
 void TokenMapImpl<Partitioner>::clear_tokens_and_hosts() {
   tokens_.clear();
   hosts_.clear();
@@ -657,14 +617,16 @@ void TokenMapImpl<Partitioner>::clear_tokens_and_hosts() {
 
 template <class Partitioner>
 void TokenMapImpl<Partitioner>::add_keyspaces(const VersionNumber& cassandra_version,
+                                              const std::string& local_dc,
                                               ResultResponse* result) {
-  update_keyspace(cassandra_version, result, false);
+  update_keyspace(cassandra_version, result, local_dc, false);
 }
 
 template <class Partitioner>
 void TokenMapImpl<Partitioner>::update_keyspaces_and_build(const VersionNumber& cassandra_version,
+                                                           const std::string& local_dc,
                                                            ResultResponse* result) {
-  update_keyspace(cassandra_version, result, true);
+  update_keyspace(cassandra_version, result, local_dc, true);
 }
 
 template <class Partitioner>
@@ -680,10 +642,10 @@ void TokenMapImpl<Partitioner>::clear_replicas_and_strategies() {
 }
 
 template <class Partitioner>
-void TokenMapImpl<Partitioner>::build() {
+void TokenMapImpl<Partitioner>::build(const std::string& local_dc) {
   uint64_t start = uv_hrtime();
   std::sort(tokens_.begin(), tokens_.end());
-  build_replicas();
+  build_replicas(local_dc);
   LOG_DEBUG("Built token map with %u hosts and %u tokens in %f ms",
             (unsigned int)hosts_.size(),
             (unsigned int)tokens_.size(),
@@ -714,6 +676,7 @@ const CopyOnWriteHostVec& TokenMapImpl<Partitioner>::get_replicas(const std::str
 template <class Partitioner>
 void TokenMapImpl<Partitioner>::update_keyspace(const VersionNumber& cassandra_version,
                                                 ResultResponse* result,
+                                                const std::string& local_dc,
                                                 bool should_build_replicas) {
   ResultIterator rows(result);
 
@@ -739,7 +702,7 @@ void TokenMapImpl<Partitioner>::update_keyspace(const VersionNumber& cassandra_v
       }
       if (should_build_replicas) {
         uint64_t start = uv_hrtime();
-        build_datacenters(hosts_, datacenters_);
+        build_datacenters(hosts_, local_dc, datacenters_);
         strategy.build_replicas(tokens_, datacenters_, replicas_[keyspace_name]);
         LOG_DEBUG("Updated token map with keyspace '%s'. Rebuilt token map with %u hosts and %u tokens in %f ms",
                   keyspace_name.c_str(),
@@ -765,8 +728,8 @@ void TokenMapImpl<Partitioner>::update_host_ids(const Host::Ptr& host) {
 }
 
 template <class Partitioner>
-void TokenMapImpl<Partitioner>::build_replicas() {
-  build_datacenters(hosts_, datacenters_);
+void TokenMapImpl<Partitioner>::build_replicas(const std::string& local_dc) {
+  build_datacenters(hosts_, local_dc, datacenters_);
   for (typename KeyspaceStrategyMap::const_iterator i = strategies_.begin(),
        end = strategies_.end();
        i != end; ++i) {

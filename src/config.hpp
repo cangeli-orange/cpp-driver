@@ -75,7 +75,8 @@ public:
       , retry_policy_(new DefaultRetryPolicy())
       , use_schema_(true)
       , use_hostname_resolution_(false)
-      , use_randomized_contact_points_(true) { }
+      , use_randomized_contact_points_(true)
+      , allow_remote_dcs_for_local_cl_(false) { }
 
   unsigned thread_count_io() const { return thread_count_io_; }
 
@@ -365,6 +366,16 @@ public:
     use_randomized_contact_points_ = enable;
   }
 
+  std::string local_dc() const { return local_dc_; }
+  void set_local_dc(const char* local_dc) {
+    local_dc_.assign(local_dc);
+  }
+
+  bool allow_remote_dcs_for_local_cl() const { return allow_remote_dcs_for_local_cl_; }
+  void set_allow_remote_dcs_for_local_cl(bool enable) {
+    allow_remote_dcs_for_local_cl_ = enable;
+  }
+
 private:
   int port_;
   int protocol_version_;
@@ -409,6 +420,8 @@ private:
   bool use_schema_;
   bool use_hostname_resolution_;
   bool use_randomized_contact_points_;
+  std::string local_dc_;
+  bool allow_remote_dcs_for_local_cl_;
 };
 
 } // namespace cass

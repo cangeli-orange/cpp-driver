@@ -249,6 +249,8 @@ CassError cass_cluster_set_load_balance_dc_aware_n(CassCluster* cluster,
   if (local_dc == NULL || local_dc_length == 0) {
     return CASS_ERROR_LIB_BAD_PARAMS;
   }
+  cluster->config().set_local_dc(local_dc);
+  cluster->config().set_allow_remote_dcs_for_local_cl(allow_remote_dcs_for_local_cl);
   cluster->config().set_load_balancing_policy(
         new cass::DCAwarePolicy(std::string(local_dc, local_dc_length),
                                 used_hosts_per_remote_dc,
